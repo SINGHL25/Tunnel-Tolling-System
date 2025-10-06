@@ -1,0 +1,1916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Tunnel Control & Tolling System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.7);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.7), 0 0 10px rgba(102, 126, 234, 0.5); }
+            to { text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.7), 0 0 20px rgba(102, 126, 234, 0.8); }
+        }
+
+        .subtitle {
+            font-size: 1.3em;
+            opacity: 0.9;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr 350px;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            transition: transform 0.3s ease;
+        }
+
+        .panel:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .panel h2 {
+            margin-bottom: 20px;
+            font-size: 1.6em;
+            border-bottom: 3px solid rgba(102, 126, 234, 0.5);
+            padding-bottom: 12px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .tunnel-container {
+            position: relative;
+            background: linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 50%, #1a1a1a 100%);
+            border-radius: 20px;
+            padding: 40px;
+            min-height: 600px;
+            overflow: hidden;
+            box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.8);
+        }
+
+        .tunnel-lights {
+            position: absolute;
+            top: 10px;
+            left: 0;
+            width: 100%;
+            height: 20px;
+            display: flex;
+            justify-content: space-around;
+            z-index: 1;
+        }
+
+        .ceiling-light {
+            width: 40px;
+            height: 20px;
+            background: radial-gradient(circle, #ffeb3b 0%, transparent 70%);
+            border-radius: 50%;
+            animation: flicker 3s infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 0.8; }
+        }
+
+        .tunnel-road {
+            position: relative;
+            height: 350px;
+            background: linear-gradient(to bottom, #2a2a2a 0%, #1a1a1a 50%, #2a2a2a 100%);
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .road-marking {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .lane-divider {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: repeating-linear-gradient(
+                to right,
+                #ffeb3b 0px,
+                #ffeb3b 40px,
+                transparent 40px,
+                transparent 80px
+            );
+            animation: road-scroll 2s linear infinite;
+        }
+
+        @keyframes road-scroll {
+            0% { background-position: 0 0; }
+            100% { background-position: 80px 0; }
+        }
+
+        .lane-divider:nth-child(1) { top: 33.33%; }
+        .lane-divider:nth-child(2) { top: 66.66%; }
+
+        .vehicle {
+            position: absolute;
+            width: 70px;
+            height: 40px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            border-radius: 8px 8px 3px 3px;
+            transition: all 0.1s linear;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .vehicle::before {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #ffeb3b;
+            border-radius: 50%;
+            top: 5px;
+            left: 8px;
+            box-shadow: 45px 0 0 #ffeb3b, 0 23px 0 #ff0000, 45px 23px 0 #ff0000;
+        }
+
+        .vehicle::after {
+            content: '';
+            position: absolute;
+            width: 30px;
+            height: 15px;
+            background: rgba(100, 200, 255, 0.3);
+            border-radius: 3px;
+            top: 10px;
+            left: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .vehicle.normal {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+
+        .vehicle.hot {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            animation: hot-pulse 0.8s infinite, shake 0.3s infinite;
+        }
+
+        .vehicle.dangerous {
+            background: linear-gradient(135deg, #f39c12 0%, #d68910 100%);
+            animation: warning-flash 0.5s infinite;
+        }
+
+        .vehicle.dangerous::after {
+            content: '☢';
+            font-size: 16px;
+            color: #000;
+            background: #ff9800;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            top: 10px;
+            left: 25px;
+        }
+
+        .vehicle.overheight {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            height: 65px;
+            top: -10px !important;
+            animation: height-warning 1s infinite;
+        }
+
+        @keyframes hot-pulse {
+            0%, 100% { 
+                box-shadow: 0 0 20px #ff0000, 0 0 40px #ff0000, 0 6px 12px rgba(0, 0, 0, 0.5);
+            }
+            50% { 
+                box-shadow: 0 0 30px #ff0000, 0 0 60px #ff0000, 0 6px 12px rgba(0, 0, 0, 0.5);
+            }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
+        }
+
+        @keyframes warning-flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes height-warning {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
+        .traffic-light {
+            display: inline-block;
+            width: 35px;
+            height: 95px;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            border-radius: 8px;
+            padding: 6px;
+            margin: 10px;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .light {
+            width: 23px;
+            height: 23px;
+            border-radius: 50%;
+            margin: 4px auto;
+            opacity: 0.2;
+            transition: all 0.3s;
+            border: 2px solid rgba(0, 0, 0, 0.3);
+        }
+
+        .light.red { background: #ff0000; }
+        .light.yellow { background: #ffeb3b; }
+        .light.green { background: #4caf50; }
+
+        .light.active {
+            opacity: 1;
+            box-shadow: 0 0 25px currentColor, 0 0 50px currentColor;
+            animation: light-glow 1.5s ease-in-out infinite;
+        }
+
+        @keyframes light-glow {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .sign {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            border: 4px solid #ffeb3b;
+            border-radius: 12px;
+            padding: 18px;
+            margin: 15px 0;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.3em;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s;
+        }
+
+        .sign.warning {
+            border-color: #ff9800;
+            color: #ff9800;
+            animation: sign-pulse 1s infinite;
+        }
+
+        .sign.danger {
+            border-color: #ff0000;
+            color: #ff0000;
+            background: linear-gradient(135deg, #1a0000 0%, #330000 100%);
+            animation: sign-blink 0.5s infinite;
+        }
+
+        @keyframes sign-pulse {
+            0%, 100% { box-shadow: 0 5px 20px rgba(255, 152, 0, 0.5); }
+            50% { box-shadow: 0 5px 30px rgba(255, 152, 0, 0.8); }
+        }
+
+        @keyframes sign-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        button:active {
+            transform: translateY(-1px);
+        }
+
+        button.emergency {
+            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+        }
+
+        button.success {
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+        }
+
+        button.warning {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        }
+
+        button.special {
+            background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+            padding: 18px;
+            border-radius: 12px;
+            border-left: 5px solid #667eea;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .stat-value {
+            font-size: 2.2em;
+            font-weight: bold;
+            color: #667eea;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            animation: counter-update 0.5s ease;
+        }
+
+        @keyframes counter-update {
+            0% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .stat-label {
+            font-size: 0.95em;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .camera-feed {
+            background: #000;
+            border-radius: 12px;
+            padding: 12px;
+            margin: 12px 0;
+            min-height: 180px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+
+        .camera-feed::before {
+            content: '● REC';
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #ff0000;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: bold;
+            animation: rec-blink 1s infinite;
+            z-index: 10;
+        }
+
+        @keyframes rec-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .camera-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 3px;
+            height: 100%;
+        }
+
+        .camera-view {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            border: 2px solid #333;
+            position: relative;
+            min-height: 80px;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .camera-view::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(255, 255, 255, 0.03) 2px,
+                rgba(255, 255, 255, 0.03) 4px
+            );
+            pointer-events: none;
+            animation: scan-line 4s linear infinite;
+        }
+
+        @keyframes scan-line {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        .camera-label {
+            padding: 8px;
+            font-size: 0.75em;
+            background: rgba(0, 0, 0, 0.7);
+            position: relative;
+            z-index: 1;
+        }
+
+        .sensor-indicator {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin: 10px 0;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .sensor-indicator:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .indicator-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-right: 12px;
+            position: relative;
+        }
+
+        .indicator-dot::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            animation: radar-pulse 2s infinite;
+        }
+
+        .indicator-dot.active {
+            background: #4caf50;
+            box-shadow: 0 0 10px #4caf50;
+        }
+
+        .indicator-dot.active::after {
+            background: #4caf50;
+        }
+
+        .indicator-dot.warning {
+            background: #ff9800;
+            box-shadow: 0 0 10px #ff9800;
+        }
+
+        .indicator-dot.warning::after {
+            background: #ff9800;
+        }
+
+        .indicator-dot.alert {
+            background: #ff0000;
+            box-shadow: 0 0 10px #ff0000;
+            animation: alert-pulse 0.5s infinite;
+        }
+
+        @keyframes radar-pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+
+        @keyframes alert-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .knowledge-base {
+            max-height: 450px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .knowledge-base::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .knowledge-base::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .knowledge-base::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+        }
+
+        .kb-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border-left: 4px solid #667eea;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kb-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .kb-item:hover::before {
+            left: 100%;
+        }
+
+        .kb-item:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateX(8px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .kb-item h3 {
+            font-size: 1.05em;
+            margin-bottom: 6px;
+            color: #667eea;
+        }
+
+        .kb-item p {
+            font-size: 0.88em;
+            opacity: 0.85;
+            line-height: 1.5;
+        }
+
+        .toll-booth {
+            position: absolute;
+            width: 90px;
+            height: 100%;
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            z-index: 5;
+        }
+
+        .toll-booth::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            width: 30px;
+            height: 30px;
+            background: #4caf50;
+            border-radius: 50%;
+            animation: toll-ready 2s infinite;
+        }
+
+        @keyframes toll-ready {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; box-shadow: 0 0 20px #4caf50; }
+        }
+
+        .transaction-log {
+            max-height: 220px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 0.88em;
+            font-family: 'Courier New', monospace;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .transaction-log::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .transaction-log::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.5);
+            border-radius: 10px;
+        }
+
+        .log-entry {
+            padding: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            animation: slideIn 0.4s ease;
+            transition: background 0.3s;
+        }
+
+        .log-entry:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .emergency-panel {
+            background: linear-gradient(135deg, rgba(255, 0, 0, 0.1) 0%, rgba(139, 0, 0, 0.1) 100%);
+            border: 3px solid #ff0000;
+            border-radius: 12px;
+            padding: 18px;
+            margin-top: 20px;
+            box-shadow: 0 5px 20px rgba(255, 0, 0, 0.2);
+        }
+
+        .emergency-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+            margin-top: 12px;
+            font-size: 1.15em;
+            padding: 16px;
+        }
+
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .status-item {
+            text-align: center;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .status-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-3px);
+        }
+
+        .status-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.active {
+            display: flex;
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            padding: 35px;
+            border-radius: 20px;
+            max-width: 700px;
+            width: 90%;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.7);
+            animation: modalSlideIn 0.4s ease;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        @keyframes modalSlideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-close {
+            float: right;
+            font-size: 2em;
+            cursor: pointer;
+            color: #fff;
+            transition: all 0.3s;
+            line-height: 0.8;
+        }
+
+        .modal-close:hover {
+            color: #ff0000;
+            transform: rotate(90deg);
+        }
+
+        .test-panel {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+        }
+
+        .test-btn {
+            width: 100%;
+            margin-top: 8px;
+            font-size: 0.95em;
+            padding: 10px;
+        }
+
+        @media (max-width: 1400px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .barrier {
+            position: absolute;
+            width: 10px;
+            height: 100%;
+            background: repeating-linear-gradient(
+                45deg,
+                #ff0000,
+                #ff0000 10px,
+                #fff 10px,
+                #fff 20px
+            );
+            transition: all 0.5s;
+            z-index: 20;
+        }
+
+        .barrier.closed {
+            height: 100%;
+        }
+
+        .barrier.open {
+            height: 0%;
+        }
+
+        .speed-sign {
+            position: absolute;
+            top: -50px;
+            right: 20px;
+            background: #fff;
+            color: #000;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.5em;
+            border: 5px solid #ff0000;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            animation: sign-bounce 2s infinite;
+        }
+
+        @keyframes sign-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .ventilation-indicator {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+        }
+
+        .fan {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #667eea;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .fan.active::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #667eea;
+            top: 50%;
+            left: 0;
+            animation: fan-rotate 1s linear infinite;
+        }
+
+        .fan.active::after {
+            content: '';
+            position: absolute;
+            width: 2px;
+            height: 100%;
+            background: #667eea;
+            left: 50%;
+            top: 0;
+            animation: fan-rotate 1s linear infinite;
+        }
+
+        @keyframes fan-rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .smoke-effect {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, rgba(100, 100, 100, 0.6) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: smoke-rise 3s ease-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes smoke-rise {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-200px) scale(2);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚇 Advanced Tunnel Control & Tolling System</h1>
+            <p class="subtitle">Intelligent Traffic Management & Safety Monitoring Platform</p>
+        </header>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <div>🟢 System Status</div>
+                <div class="status-value" id="systemStatus">OPERATIONAL</div>
+            </div>
+            <div class="status-item">
+                <div>🚗 Traffic Flow</div>
+                <div class="status-value" id="trafficFlow">NORMAL</div>
+            </div>
+            <div class="status-item">
+                <div>⚠️ Active Alerts</div>
+                <div class="status-value" id="alertCount">0</div>
+            </div>
+            <div class="status-item">
+                <div>🕐 System Uptime</div>
+                <div class="status-value" id="uptime">00:00:00</div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- LEFT PANEL - CONTROLS -->
+            <div class="panel">
+                <h2>🎛️ Control Center</h2>
+                
+                <h3 style="font-size: 1.1em; margin-bottom: 10px;">Vehicle Simulation</h3>
+                <div class="controls">
+                    <button onclick="testAddVehicle('normal')" class="success">
+                        <span style="position: relative; z-index: 1;">🚗 Normal Vehicle</span>
+                    </button>
+                    <button onclick="testAddVehicle('hot')" class="emergency">
+                        <span style="position: relative; z-index: 1;">🔥 Hot Vehicle</span>
+                    </button>
+                    <button onclick="testAddVehicle('dangerous')" class="warning">
+                        <span style="position: relative; z-index: 1;">☢️ Dangerous Goods</span>
+                    </button>
+                    <button onclick="testAddVehicle('overheight')" class="special">
+                        <span style="position: relative; z-index: 1;">📏 Over-Height</span>
+                    </button>
+                </div>
+
+                <div style="margin-top: 25px;">
+                    <h3 style="font-size: 1.1em; margin-bottom: 15px;">🚦 Traffic Light Control</h3>
+                    <div style="display: flex; justify-content: space-around;">
+                        <div>
+                            <div class="traffic-light" id="entryLight">
+                                <div class="light red" id="entryRed"></div>
+                                <div class="light yellow" id="entryYellow"></div>
+                                <div class="light green active" id="entryGreen"></div>
+                            </div>
+                            <div style="text-align: center; font-size: 0.85em; margin-top: 8px;">Entry</div>
+                            <button onclick="testTrafficLight('entry')" style="font-size: 0.8em; padding: 6px 10px; margin-top: 5px;">
+                                <span style="position: relative; z-index: 1;">Test</span>
+                            </button>
+                        </div>
+                        <div>
+                            <div class="traffic-light" id="exitLight">
+                                <div class="light red" id="exitRed"></div>
+                                <div class="light yellow" id="exitYellow"></div>
+                                <div class="light green active" id="exitGreen"></div>
+                            </div>
+                            <div style="text-align: center; font-size: 0.85em; margin-top: 8px;">Exit</div>
+                            <button onclick="testTrafficLight('exit')" style="font-size: 0.8em; padding: 6px 10px; margin-top: 5px;">
+                                <span style="position: relative; z-index: 1;">Test</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sign" id="mainSign">TUNNEL OPEN - DRIVE SAFELY</div>
+                <button onclick="testVMS()" style="width: 100%; margin-top: 10px;">
+                    <span style="position: relative; z-index: 1;">Test Variable Message Sign</span>
+                </button>
+
+                <div class="test-panel">
+                    <h3 style="font-size: 1em; margin-bottom: 10px;">🔧 System Tests</h3>
+                    <button onclick="testBarrier()" class="test-btn">
+                        <span style="position: relative; z-index: 1;">Test Access Barriers</span>
+                    </button>
+                    <button onclick="testSpeedLimit()" class="test-btn">
+                        <span style="position: relative; z-index: 1;">Test Speed Limits</span>
+                    </button>
+                    <button onclick="testVentilation()" class="test-btn">
+                        <span style="position: relative; z-index: 1;">Test Ventilation</span>
+                    </button>
+                    <button onclick="testPublicAddress()" class="test-btn">
+                        <span style="position: relative; z-index: 1;">Test PA System</span>
+                    </button>
+                    <button onclick="testEmergencyPhone()" class="test-btn">
+                        <span style="position: relative; z-index: 1;">Test Emergency Phone</span>
+                    </button>
+                    <button onclick="testAllSensors()" class="test-btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <span style="position: relative; z-index: 1;">🔍 Test All Detection Systems</span>
+                    </button>
+                </div>
+
+                <div class="emergency-panel">
+                    <h3 style="margin-bottom: 12px;">🚨 Emergency Controls</h3>
+                    <button class="emergency-btn" onclick="testEmergencyClose()">
+                        <span style="position: relative; z-index: 1;">⛔ EMERGENCY CLOSURE</span>
+                    </button>
+                    <button class="emergency-btn" onclick="testFireAlarm()">
+                        <span style="position: relative; z-index: 1;">🔥 FIRE ALARM</span>
+                    </button>
+                    <button class="success" style="width: 100%; margin-top: 12px;" onclick="testResetSystem()">
+                        <span style="position: relative; z-index: 1;">✓ Reset System</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- CENTER PANEL - VISUALIZATION -->
+            <div class="panel">
+                <h2>🛣️ Tunnel Visualization</h2>
+                <div class="tunnel-container">
+                    <div class="tunnel-lights">
+                        <div class="ceiling-light"></div>
+                        <div class="ceiling-light"></div>
+                        <div class="ceiling-light"></div>
+                        <div class="ceiling-light"></div>
+                        <div class="ceiling-light"></div>
+                        <div class="ceiling-light"></div>
+                        <div class="ceiling-light"></div>
+                    </div>
+
+                    <div class="ventilation-indicator">
+                        <div class="fan active" title="Ventilation Fan 1"></div>
+                        <div class="fan active" title="Ventilation Fan 2"></div>
+                        <div class="fan active" title="Ventilation Fan 3"></div>
+                    </div>
+
+                    <div class="speed-sign" id="speedSign">80</div>
+                    
+                    <div class="toll-booth" style="left: 20px;" id="entryBooth">
+                        <div style="margin-top: 40px; font-size: 0.85em; text-align: center;">ENTRY<br>TOLL</div>
+                    </div>
+                    <div class="barrier open" id="entryBarrier" style="left: 110px;"></div>
+                    
+                    <div class="tunnel-road" id="tunnelRoad">
+                        <div class="road-marking">
+                            <div class="lane-divider"></div>
+                            <div class="lane-divider"></div>
+                        </div>
+                    </div>
+
+                    <div class="barrier open" id="exitBarrier" style="right: 110px;"></div>
+                    <div class="toll-booth" style="right: 20px;" id="exitBooth">
+                        <div style="margin-top: 40px; font-size: 0.85em; text-align: center;">EXIT<br>TOLL</div>
+                    </div>
+
+                    <div style="margin-top: 25px;">
+                        <h3 style="font-size: 1.1em; margin-bottom: 12px;">📹 Live Camera Monitoring</h3>
+                        <div class="camera-feed">
+                            <div class="camera-grid">
+                                <div class="camera-view">
+                                    <div class="camera-label">CAM-01: Entry Zone</div>
+                                </div>
+                                <div class="camera-view">
+                                    <div class="camera-label">CAM-02: Mid Section</div>
+                                </div>
+                                <div class="camera-view">
+                                    <div class="camera-label">CAM-03: Exit Zone</div>
+                                </div>
+                                <div class="camera-view">
+                                    <div class="camera-label">CAM-04: Emergency</div>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="testCameras()" style="width: 100%; margin-top: 10px;">
+                            <span style="position: relative; z-index: 1;">🎥 Test Camera System</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="vehicleCount">0</div>
+                        <div class="stat-label">Vehicles in Tunnel</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalTransactions">0</div>
+                        <div class="stat-label">Total Transactions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="avgSpeed">80</div>
+                        <div class="stat-label">Avg Speed (km/h)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="revenue">$0</div>
+                        <div class="stat-label">Revenue Today</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL - MONITORING -->
+            <div class="panel">
+                <h2>📊 System Monitoring</h2>
+                
+                <h3 style="font-size: 1.05em; margin-bottom: 12px;">Detection Systems Status</h3>
+                <div class="sensor-indicator" onclick="testSensor('overheight')">
+                    <div class="indicator-dot active" id="sensor-overheight"></div>
+                    <span>📏 Over-Height Detection</span>
+                </div>
+                <div class="sensor-indicator" onclick="testSensor('hotspot')">
+                    <div class="indicator-dot active" id="sensor-hotspot"></div>
+                    <span>🔥 Hot Spot Detection</span>
+                </div>
+                <div class="sensor-indicator" onclick="testSensor('dangerous')">
+                    <div class="indicator-dot active" id="sensor-dangerous"></div>
+                    <span>☢️ Dangerous Goods Detection</span>
+                </div>
+                <div class="sensor-indicator" onclick="testSensor('lpr')">
+                    <div class="indicator-dot active" id="sensor-lpr"></div>
+                    <span>🎯 License Plate Recognition</span>
+                </div>
+                <div class="sensor-indicator" onclick="testSensor('speed')">
+                    <div class="indicator-dot active" id="sensor-speed"></div>
+                    <span>⚡ Speed Enforcement</span>
+                </div>
+                <div class="sensor-indicator" onclick="testSensor('traffic')">
+                    <div class="indicator-dot active" id="sensor-traffic"></div>
+                    <span>📊 Traffic Counting System</span>
+                </div>
+
+                <h3 style="font-size: 1.05em; margin: 20px 0 12px 0;">📝 Transaction Log</h3>
+                <div class="transaction-log" id="transactionLog">
+                    <div class="log-entry">System initialized and ready...</div>
+                </div>
+                <button onclick="clearLog()" style="width: 100%; margin-top: 10px; font-size: 0.9em;">
+                    <span style="position: relative; z-index: 1;">Clear Log</span>
+                </button>
+
+                <h3 style="font-size: 1.05em; margin: 20px 0 12px 0;">📚 Knowledge Base</h3>
+                <div class="knowledge-base">
+                    <div class="kb-item" onclick="showKB('lcs')">
+                        <h3>📍 Lane Control Signs (LCS)</h3>
+                        <p>Display current lane status and traffic diversions. Installed every 200-400m.</p>
+                    </div>
+                    <div class="kb-item" onclick="showKB('vsls')">
+                        <h3>🚦 Speed Limit Signs (VSLS)</h3>
+                        <p>Dynamic speed limits based on tunnel status. Installed every 400m.</p>
+                    </div>
+                    <div class="kb-item" onclick="showKB('vms')">
+                        <h3>📺 Variable Message Signs (VMS)</h3>
+                        <p>Display tunnel status and diversion routes at access points.</p>
+                    </div>
+                    <div class="kb-item" onclick="showKB('overheight')">
+                        <h3>📏 Over-Height Detection</h3>
+                        <p>Photoelectric barriers detect vehicles exceeding height limits.</p>
+                    </div>
+                    <div class="kb-item" onclick="showKB('dangerous')">
+                        <h3>☢️ Dangerous Goods Detection</h3>
+                        <p>CCTV cameras detect hazardous material plates via image processing.</p>
+                    </div>
+                    <div class="kb-item" onclick="showKB('hotspot')">
+                        <h3>🔥 Hot Spot Detection</h3>
+                        <p>Thermal cameras identify overheated components to prevent fires.</p>
+                    </div>
+                    <div class="kb-item" onclick="showKB('emergency')">
+                        <h3>📞 Emergency Telephones</h3>
+                        <p>Hands-free phones every 150-200m for user-operator communication.</p>
+                    </div>
+                    <div class="kb-item" onclick="showKB('pa')">
+                        <h3>📢 Public Address System</h3>
+                        <p>Zoned loudspeakers for targeted voice messages throughout tunnel.</p>
+                    </div>
+                    <div class="kb-item" onclick="showKB('lpr')">
+                        <h3>🎯 License Plate Recognition</h3>
+                        <p>Video processing for travel time, vehicle counting, and enforcement.</p>
+                    </div>
+                    <div class="kb-item" onclick="showKB('barriers')">
+                        <h3>🚧 Access Control Barriers</h3>
+                        <p>Automatic barriers close tunnel access during incidents.</p>
+                    </div>
+                    <div class="kb-item" onclick="showKB('fire')">
+                        <h3>🚒 Fire Safety Protocol</h3>
+                        <p>Comprehensive emergency procedures and evacuation systems.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Knowledge Base Modal -->
+    <div class="modal" id="kbModal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle" style="margin-bottom: 15px;">System Information</h2>
+            <p id="modalContent" style="line-height: 1.7;"></p>
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        const state = {
+            vehicles: [],
+            vehicleCount: 0,
+            transactions: 0,
+            revenue: 0,
+            startTime: Date.now(),
+            emergencyMode: false,
+            nextVehicleId: 1,
+            alerts: 0,
+            ventilationActive: true,
+            barriersOpen: true,
+            currentSpeedLimit: 80
+        };
+
+        // Knowledge Base Content
+        const knowledgeBase = {
+            lcs: {
+                title: "Lane Control Signs (LCS)",
+                content: "Lane Control Signs are critical traffic management devices that display the current status of traffic lanes to drivers in real-time. They signalize traffic diversions, lane closures, and operational changes. These signs are typically installed at intervals of 200 to 400 meters throughout the tunnel to ensure continuous visibility and driver awareness. The LCS system integrates with the central control system to dynamically manage traffic flow based on current conditions, incidents, or maintenance activities. Each sign can display various symbols including green arrows (lane open), red X (lane closed), yellow arrows (merge), and warning symbols."
+            },
+            vsls: {
+                title: "Vehicle Speed Limit Signs (VSLS)",
+                content: "Variable Speed Limit Signs display adaptive speed limits that automatically adjust according to the tunnel's operational status and real-time conditions. These signs are usually installed every 400 meters and respond dynamically to factors such as traffic density, weather conditions, incidents, maintenance activities, and visibility levels. The system can reduce speeds during adverse conditions to optimize safety and increase limits during ideal conditions to improve traffic flow. The VSLS works in conjunction with speed enforcement systems to ensure compliance and reduce accident risks."
+            },
+            vms: {
+                title: "Variable Message Signs (VMS)",
+                content: "Variable Message Signs are sophisticated display systems located at tunnel accesses and internally to provide comprehensive real-time information. Large VMS units at tunnel entrances display detailed information about tunnel status, expected delays, alternative routes, and emergency conditions. Smaller VMS units inside the tunnel provide updates, warnings, and guidance to drivers already in transit. The system can display text messages, pictograms, and animations. During emergencies, VMS units coordinate with other systems to guide users to safety, display evacuation instructions, and manage traffic diversion."
+            },
+            overheight: {
+                title: "Over-Height Vehicle Detection System",
+                content: "This sophisticated system prevents vehicles exceeding the tunnel height clearance from entering, thereby avoiding structural damage and dangerous situations. The system consists of two poles with photoelectric barriers positioned at the maximum permissible vehicle height. A magnetic loop detector or additional photoelectric barrier confirms that beam interruption was caused by a vehicle rather than environmental factors like leaves, birds, or wind. Upon detection, the system triggers: variable message signs warning the driver, activation of red traffic lights, notification to the control center, CCTV camera recording for verification, and optional activation of an emergency telephone allowing direct communication between driver and operator. The system logs all detections for analysis and maintenance purposes."
+            },
+            dangerous: {
+                title: "Dangerous Goods Vehicle Detection System",
+                content: "Advanced CCTV cameras equipped with sophisticated video image processing algorithms automatically detect dangerous goods placards (ADR plates) on vehicles. The system can be configured to either prevent access entirely or monitor and track hazardous material transports through the tunnel. Upon detection, the system activates variable message signs with specific instructions for the driver, notifies control center operators with vehicle details, tracks the vehicle's position through multiple camera zones, and records entry and exit times. Cameras positioned at the tunnel exit confirm when the hazardous vehicle safely leaves the tunnel. This system ensures compliance with safety regulations, enables appropriate emergency response protocols, and maintains detailed logs for regulatory reporting."
+            },
+            hotspot: {
+                title: "Hot Spot Detection System",
+                content: "This advanced preventive safety system combines high-resolution thermal infrared cameras with precision laser scanners to detect overheated vehicle components before tunnel entry. The system operates at high frame rates enabling free-flow detection at full motorway speeds without requiring vehicles to slow down. For each passing vehicle, the system generates a detailed 3D model using laser scanning, then superimposes thermal temperature profiles onto this model. Advanced algorithms automatically identify and classify vehicle parts such as wheels, brakes, exhaust systems, engine compartment, and cabin, each with predefined temperature alarm thresholds. When critical temperatures are detected, the system immediately alerts the control center, activates warning signs, and can prevent tunnel access. By identifying high-risk vehicles before they enter, the system prevents potential vehicle fires that could result in casualties, extensive property damage, and prolonged tunnel closures."
+            },
+            emergency: {
+                title: "Emergency Telephone System",
+                content: "Emergency telephones are strategically positioned every 150 to 200 meters throughout the tunnel according to local safety regulations. These devices are hands-free units featuring large, illuminated push buttons for easy activation even in reduced visibility conditions. Each telephone includes integrated microphones and loudspeakers for clear two-way communication between tunnel users and the control center. The telephones are connected to a dedicated emergency communication network with backup power systems. Upon activation, the system automatically identifies the precise location and establishes priority communication with operators. The emergency telephone stations are typically housed in illuminated recesses with clear signage and may include emergency equipment such as fire extinguishers. The system enables rapid reporting of incidents, medical emergencies, vehicle breakdowns, or other situations requiring assistance."
+            },
+            pa: {
+                title: "Public Address System",
+                content: "The Public Address (PA) System is a critical communication infrastructure consisting of strategically placed loudspeaker groups installed at regular intervals along the entire tunnel length. The system is divided into multiple independently controllable voice message zones in each tunnel tube, allowing operators to transmit targeted messages to specific tunnel sections without causing unnecessary alarm in unaffected areas. This zoned approach enables precise communication during emergencies, such as guiding users in affected sections to emergency exits while allowing normal traffic flow in other areas. The system features: high-quality loudspeakers designed for tunnel acoustics, redundant amplification systems, pre-recorded emergency messages in multiple languages, live voice transmission capability from the control center, integration with fire detection systems for automatic alarm broadcasting, and backup power systems. During emergencies, the PA system provides evacuation instructions, warns of hazards, and coordinates with emergency services."
+            },
+            lpr: {
+                title: "License Plate Recognition System",
+                content: "Advanced video image processing technology enables sophisticated license plate recognition with multiple critical applications. The system uses high-resolution cameras with specialized optics and image processing algorithms to capture and read license plates on vehicles traveling at full speed. Key applications include: Travel Time Measurement by comparing timestamps at multiple detection points to calculate average journey speed and identify traffic congestion; Real-time Vehicle Counting maintaining an accurate count of vehicles currently inside the tunnel for emergency planning; Speed-Over-Distance Enforcement measuring average speed between two points to detect violations more effectively than instantaneous speed cameras; Black and White List Management automatically identifying vehicles flagged for various reasons (stolen vehicles, toll violators, wanted vehicles, VIP passages). The system stores plate images and data according to privacy regulations and provides searchable databases for incident investigation. Integration with regional and national databases enables coordinated law enforcement and security applications."
+            },
+            barriers: {
+                title: "Access Control Barrier System",
+                content: "Automatic barriers are installed at all tunnel access points to provide immediate physical closure capability during emergencies or incidents. The barriers are designed for rapid deployment (typically 3-5 seconds) and feature: high-visibility striping (red and white), illuminated warning signals, robust construction capable of withstanding impact, fail-safe mechanisms ensuring safe operation during power failures, manual override capability for emergency services, integration with traffic light systems for coordinated access control, and sensors to detect vehicles in the barrier zone. The control center can operate barriers individually or in groups, close specific directions while maintaining others, and coordinate with traffic management systems. During emergencies, barriers prevent additional vehicles from entering hazardous areas, control traffic flow for emergency vehicle access, and enable systematic tunnel evacuation. The system includes backup power, redundant control systems, and continuous status monitoring."
+            },
+            fire: {
+                title: "Fire Safety and Emergency Response Protocol",
+                content: "The tunnel fire safety system represents a comprehensive, multi-layered approach to the most serious tunnel emergency scenario. Primary priorities ranked by importance are: 1) Facilitate rapid self-evacuation of all tunnel users, 2) Protect those unable to evacuate independently, 3) Enable fast and safe emergency service access, 4) Protect tunnel infrastructure and equipment. The integrated fire safety system includes: Rapid detection through thermal cameras, smoke detectors, and CO monitoring providing sub-minute detection times; Immediate alert systems including sirens, PA announcements, VMS messages, and traffic light activation; Detailed fire information systems providing real-time location, intensity, and spread data to emergency services; Dedicated emergency vehicle access lanes and routes; Continuous fire extinction supervision via infrared CCTV allowing operators to monitor conditions; Coordination with emergency services through dedicated radio communication systems; Strategically positioned fire hoses and extinguishers accessible every 150m; Controlled longitudinal ventilation directing smoke and heat away from evacuating users; Public communication via multiple channels (loudspeakers, radio frequencies, VMS); Clearly signalized safe rooms, cross-passages, and emergency exits equipped with fire-rated doors, emergency lighting, ventilation, telephones, and basic life support equipment; Infrared-capable CCTV cameras to locate people in smoke-filled conditions; Fire-proof materials and systems maintaining functionality during fires; Automatic fan activation creating smoke-free evacuation routes; Water mist suppression systems in high-risk zones; Access control preventing dangerous goods and high-risk vehicles from entering; Validated emergency procedures through regular fire drills simulating realistic scenarios; Training programs for operators and emergency responders; Post-incident analysis and continuous improvement protocols."
+            }
+        };
+
+        // Vehicle Management
+        function testAddVehicle(type) {
+            const vehicle = {
+                id: state.nextVehicleId++,
+                type: type,
+                position: 0,
+                lane: Math.floor(Math.random() * 3),
+                speed: 2 + Math.random() * 2,
+                element: null,
+                detected: false
+            };
+
+            const vehicleEl = document.createElement('div');
+            vehicleEl.className = `vehicle ${type}`;
+            vehicleEl.style.left = '120px';
+            vehicleEl.style.top = (vehicle.lane * 116 + 35) + 'px';
+            vehicleEl.id = 'vehicle-' + vehicle.id;
+            vehicleEl.onclick = () => showVehicleInfo(vehicle);
+            vehicleEl.title = 'Click for vehicle details';
+
+            document.getElementById('tunnelRoad').appendChild(vehicleEl);
+            vehicle.element = vehicleEl;
+            state.vehicles.push(vehicle);
+
+            updateVehicleCount();
+            logTransaction(`${getVehicleTypeIcon(type)} ${type.toUpperCase()} vehicle V${vehicle.id} entered tunnel`);
+
+            // Trigger detection alerts
+            if (type === 'hot') {
+                triggerAlert('🔥 HOT SPOT DETECTED - Vehicle V' + vehicle.id, 'warning');
+                flashSensor('hotspot');
+            } else if (type === 'dangerous') {
+                triggerAlert('☢️ DANGEROUS GOODS VEHICLE - V' + vehicle.id, 'warning');
+                flashSensor('dangerous');
+            } else if (type === 'overheight') {
+                triggerAlert('📏 OVER-HEIGHT VEHICLE DETECTED - V' + vehicle.id, 'alert');
+                flashSensor('overheight');
+            }
+
+            flashSensor('lpr');
+            flashSensor('traffic');
+        }
+
+        function getVehicleTypeIcon(type) {
+            const icons = {
+                normal: '🚗',
+                hot: '🔥',
+                dangerous: '☢️',
+                overheight: '📏'
+            };
+            return icons[type] || '🚗';
+        }
+
+        function moveVehicles() {
+            if (state.emergencyMode && !state.barriersOpen) {
+                // Stop vehicles in emergency
+                return;
+            }
+
+            state.vehicles = state.vehicles.filter(vehicle => {
+                vehicle.position += vehicle.speed;
+                
+                if (vehicle.element) {
+                    vehicle.element.style.left = (120 + vehicle.position) + 'px';
+                }
+
+                // Midpoint detection for LPR
+                if (!vehicle.detected && vehicle.position > 400) {
+                    vehicle.detected = true;
+                    flashSensor('lpr');
+                    flashSensor('speed');
+                }
+
+                // Remove vehicle if it exits
+                if (vehicle.position > 750) {
+                    if (vehicle.element) {
+                        vehicle.element.remove();
+                    }
+                    processToll(vehicle);
+                    return false;
+                }
+                return true;
+            });
+            
+            updateVehicleCount();
+        }
+
+        function processToll(vehicle) {
+            const tollRates = {
+                normal: 5,
+                hot: 10,
+                dangerous: 15,
+                overheight: 20
+            };
+            
+            const tollAmount = tollRates[vehicle.type] || 5;
+            
+            state.transactions++;
+            state.revenue += tollAmount;
+            
+            document.getElementById('totalTransactions').textContent = state.transactions;
+            document.getElementById('revenue').textContent = ' + state.revenue;
+            
+            logTransaction(`💰 Toll processed: V${vehicle.id} - ${tollAmount} - Exit completed`);
+            flashSensor('lpr');
+        }
+
+        function updateVehicleCount() {
+            state.vehicleCount = state.vehicles.length;
+            document.getElementById('vehicleCount').textContent = state.vehicleCount;
+        }
+
+        function showVehicleInfo(vehicle) {
+            const types = {
+                normal: 'Standard Vehicle',
+                hot: 'Hot Spot Detected - Overheated Components',
+                dangerous: 'Dangerous Goods Transport (ADR)',
+                overheight: 'Over-Height Vehicle - Clearance Warning'
+            };
+            
+            const speed = Math.round(vehicle.speed * 30);
+            const position = Math.round(vehicle.position);
+            
+            alert(`🚗 VEHICLE INFORMATION\n\n` +
+                  `ID: V${vehicle.id}\n` +
+                  `Type: ${types[vehicle.type]}\n` +
+                  `Lane: ${vehicle.lane + 1}\n` +
+                  `Speed: ${speed} km/h\n` +
+                  `Position: ${position}m\n` +
+                  `Status: ${vehicle.detected ? 'Tracked by LPR' : 'Approaching'}`);
+        }
+
+        // Logging System
+        function logTransaction(message) {
+            const log = document.getElementById('transactionLog');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            log.insertBefore(entry, log.firstChild);
+            
+            // Keep only last 100 entries
+            while (log.children.length > 100) {
+                log.removeChild(log.lastChild);
+            }
+        }
+
+        function clearLog() {
+            const log = document.getElementById('transactionLog');
+            log.innerHTML = '<div class="log-entry">Log cleared - System ready</div>';
+            logTransaction('✓ Transaction log cleared by operator');
+        }
+
+        // Alert System
+        function triggerAlert(message, level) {
+            state.alerts++;
+            document.getElementById('alertCount').textContent = state.alerts;
+            
+            const sign = document.getElementById('mainSign');
+            sign.textContent = message;
+            sign.className = 'sign ' + level;
+            
+            logTransaction(`⚠️ ALERT: ${message}`);
+            
+            if (!state.emergencyMode) {
+                setTimeout(() => {
+                    sign.textContent = 'TUNNEL OPEN - DRIVE SAFELY';
+                    sign.className = 'sign';
+                }, 5000);
+            }
+        }
+
+        // Sensor Testing
+        function flashSensor(sensorId) {
+            const sensor = document.getElementById('sensor-' + sensorId);
+            if (sensor) {
+                sensor.classList.add('warning');
+                setTimeout(() => {
+                    sensor.classList.remove('warning');
+                    sensor.classList.add('active');
+                }, 1000);
+            }
+        }
+
+        function testSensor(sensorType) {
+            const sensorNames = {
+                overheight: '📏 Over-Height Detection System',
+                hotspot: '🔥 Hot Spot Detection System',
+                dangerous: '☢️ Dangerous Goods Detection System',
+                lpr: '🎯 License Plate Recognition System',
+                speed: '⚡ Speed Enforcement System',
+                traffic: '📊 Traffic Counting System'
+            };
+            
+            flashSensor(sensorType);
+            logTransaction(`🔍 Testing ${sensorNames[sensorType]}...`);
+            
+            setTimeout(() => {
+                logTransaction(`✓ ${sensorNames[sensorType]} - Test PASSED`);
+            }, 1000);
+        }
+
+        function testAllSensors() {
+            logTransaction('🔍 Initiating comprehensive sensor system test...');
+            const sensors = ['overheight', 'hotspot', 'dangerous', 'lpr', 'speed', 'traffic'];
+            
+            sensors.forEach((sensor, index) => {
+                setTimeout(() => {
+                    testSensor(sensor);
+                }, index * 500);
+            });
+            
+            setTimeout(() => {
+                logTransaction('✓ All detection systems operational - Test completed');
+                alert('✓ SENSOR TEST COMPLETE\n\nAll detection systems are operational:\n\n' +
+                      '✓ Over-Height Detection\n' +
+                      '✓ Hot Spot Detection\n' +
+                      '✓ Dangerous Goods Detection\n' +
+                      '✓ License Plate Recognition\n' +
+                      '✓ Speed Enforcement\n' +
+                      '✓ Traffic Counting');
+            }, 3500);
+        }
+
+        // Traffic Light Control
+        function testTrafficLight(location) {
+            const lights = {
+                entry: { red: 'entryRed', yellow: 'entryYellow', green: 'entryGreen' },
+                exit: { red: 'exitRed', yellow: 'exitYellow', green: 'exitGreen' }
+            };
+            
+            const current = lights[location];
+            logTransaction(`🚦 Testing ${location} traffic light sequence...`);
+            
+            // Green to Yellow
+            document.getElementById(current.green).classList.remove('active');
+            document.getElementById(current.yellow).classList.add('active');
+            
+            setTimeout(() => {
+                // Yellow to Red
+                document.getElementById(current.yellow).classList.remove('active');
+                document.getElementById(current.red).classList.add('active');
+                
+                setTimeout(() => {
+                    // Red to Green
+                    document.getElementById(current.red).classList.remove('active');
+                    document.getElementById(current.green).classList.add('active');
+                    logTransaction(`✓ ${location.toUpperCase()} traffic light test completed`);
+                }, 2000);
+            }, 2000);
+        }
+
+        // Variable Message Sign Test
+        function testVMS() {
+            const messages = [
+                'SPEED LIMIT 60 KM/H',
+                'KEEP SAFE DISTANCE',
+                'LANE 2 CLOSED AHEAD',
+                'TUNNEL OPEN - DRIVE SAFELY'
+            ];
+            
+            let index = 0;
+            logTransaction('📺 Testing Variable Message Sign system...');
+            
+            const interval = setInterval(() => {
+                const sign = document.getElementById('mainSign');
+                sign.textContent = messages[index];
+                sign.className = 'sign warning';
+                
+                index++;
+                if (index >= messages.length) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        sign.textContent = 'TUNNEL OPEN - DRIVE SAFELY';
+                        sign.className = 'sign';
+                        logTransaction('✓ VMS test completed - System operational');
+                    }, 2000);
+                }
+            }, 2000);
+        }
+
+        // Barrier Control
+        function testBarrier() {
+            logTransaction('🚧 Testing access control barriers...');
+            const entryBarrier = document.getElementById('entryBarrier');
+            const exitBarrier = document.getElementById('exitBarrier');
+            
+            // Close barriers
+            entryBarrier.classList.remove('open');
+            entryBarrier.classList.add('closed');
+            exitBarrier.classList.remove('open');
+            exitBarrier.classList.add('closed');
+            state.barriersOpen = false;
+            
+            logTransaction('⛔ Barriers CLOSED');
+            
+            setTimeout(() => {
+                // Open barriers
+                entryBarrier.classList.remove('closed');
+                entryBarrier.classList.add('open');
+                exitBarrier.classList.remove('closed');
+                exitBarrier.classList.add('open');
+                state.barriersOpen = true;
+                
+                logTransaction('✓ Barriers OPEN - Test completed');
+            }, 3000);
+        }
+
+        // Speed Limit Test
+        function testSpeedLimit() {
+            const speeds = [60, 40, 80];
+            let index = 0;
+            
+            logTransaction('⚡ Testing variable speed limit system...');
+            
+            const interval = setInterval(() => {
+                state.currentSpeedLimit = speeds[index];
+                document.getElementById('speedSign').textContent = speeds[index];
+                logTransaction(`Speed limit changed to ${speeds[index]} km/h`);
+                
+                index++;
+                if (index >= speeds.length) {
+                    clearInterval(interval);
+                    logTransaction('✓ Speed limit system test completed');
+                }
+            }, 2000);
+        }
+
+        // Ventilation Test
+        function testVentilation() {
+            logTransaction('💨 Testing ventilation system...');
+            const fans = document.querySelectorAll('.fan');
+            
+            // Stop fans
+            fans.forEach(fan => fan.classList.remove('active'));
+            state.ventilationActive = false;
+            logTransaction('⚠️ Ventilation fans stopped');
+            
+            setTimeout(() => {
+                // Restart fans
+                fans.forEach(fan => fan.classList.add('active'));
+                state.ventilationActive = true;
+                logTransaction('✓ Ventilation system restarted - Test completed');
+            }, 3000);
+        }
+
+        // Public Address Test
+        function testPublicAddress() {
+            logTransaction('📢 Testing Public Address system...');
+            const zones = ['Zone 1 (Entry)', 'Zone 2 (Mid-section)', 'Zone 3 (Exit)'];
+            
+            zones.forEach((zone, index) => {
+                setTimeout(() => {
+                    logTransaction(`📢 PA announcement to ${zone}`);
+                }, index * 1000);
+            });
+            
+            setTimeout(() => {
+                logTransaction('✓ PA system test completed - All zones operational');
+                alert('📢 PUBLIC ADDRESS SYSTEM TEST\n\nTest announcement broadcast to all zones:\n\n✓ Zone 1 (Entry)\n✓ Zone 2 (Mid-section)\n✓ Zone 3 (Exit)\n\nAll loudspeakers operational');
+            }, 3500);
+        }
+
+        // Emergency Phone Test
+        function testEmergencyPhone() {
+            logTransaction('📞 Testing emergency telephone system...');
+            
+            setTimeout(() => {
+                logTransaction('📞 Simulating emergency call from station 850m');
+                
+                setTimeout(() => {
+                    alert('📞 EMERGENCY CALL RECEIVED\n\nLocation: Station 850m\nCaller: Test User\nStatus: Connected\n\nEmergency telephone system operational.\nOperator can communicate with tunnel users.');
+                    logTransaction('✓ Emergency call handled - System operational');
+                }, 1000);
+            }, 1000);
+        }
+
+        // Camera Test
+        function testCameras() {
+            logTransaction('🎥 Testing camera monitoring system...');
+            const cameras = document.querySelectorAll('.camera-view');
+            
+            cameras.forEach((cam, index) => {
+                setTimeout(() => {
+                    cam.style.background = 'linear-gradient(135deg, #1a4d1a 0%, #2d6b2d 100%)';
+                    logTransaction(`✓ CAM-0${index + 1} verified - Image quality good`);
+                    
+                    setTimeout(() => {
+                        cam.style.background = 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)';
+                    }, 1000);
+                }, index * 500);
+            });
+            
+            setTimeout(() => {
+                logTransaction('✓ All cameras operational - Full coverage confirmed');
+            }, 2500);
+        }
+
+        // Emergency Functions
+        function testEmergencyClose() {
+            state.emergencyMode = true;
+            logTransaction('🚨 EMERGENCY CLOSURE ACTIVATED');
+            
+            // Change traffic lights to red
+            document.getElementById('entryGreen').classList.remove('active');
+            document.getElementById('entryRed').classList.add('active');
+            document.getElementById('exitGreen').classList.remove('active');
+            document.getElementById('exitRed').classList.add('active');
+            
+            // Close barriers
+            const entryBarrier = document.getElementById('entryBarrier');
+            const exitBarrier = document.getElementById('exitBarrier');
+            entryBarrier.classList.remove('open');
+            entryBarrier.classList.add('closed');
+            exitBarrier.classList.remove('open');
+            exitBarrier.classList.add('closed');
+            state.barriersOpen = false;
+            
+            // Update signs
+            document.getElementById('mainSign').textContent = '🚨 TUNNEL CLOSED - EMERGENCY';
+            document.getElementById('mainSign').className = 'sign danger';
+            
+            // Update status
+            document.getElementById('systemStatus').textContent = 'EMERGENCY';
+            document.getElementById('trafficFlow').textContent = 'CLOSED';
+            
+            logTransaction('⛔ All access barriers closed');
+            logTransaction('🚦 Traffic lights set to RED');
+            logTransaction('📢 Emergency announcements activated');
+            
+            triggerAlert('TUNNEL CLOSED - EMERGENCY PROTOCOL ACTIVE', 'danger');
+        }
+
+        function testFireAlarm() {
+            testEmergencyClose();
+            logTransaction('🔥 FIRE ALARM ACTIVATED - EMERGENCY PROTOCOLS ENGAGED');
+            logTransaction('💨 Ventilation redirected for smoke control');
+            logTransaction('📞 Emergency services notified automatically');
+            logTransaction('📢 Evacuation announcements broadcasting');
+            logTransaction('🚒 Fire suppression systems on standby');
+            
+            // Create smoke effect
+            const tunnel = document.getElementById('tunnelRoad');
+            const smoke = document.createElement('div');
+            smoke.className = 'smoke-effect';
+            smoke.style.left = '300px';
+            smoke.style.top = '150px';
+            tunnel.appendChild(smoke);
+            
+            setTimeout(() => {
+                smoke.remove();
+            }, 3000);
+            
+            setTimeout(() => {
+                alert('🔥 FIRE ALARM ACTIVATED!\n\n' +
+                      'Emergency Protocols Engaged:\n\n' +
+                      '✓ Tunnel closed to traffic\n' +
+                      '✓ Emergency services notified\n' +
+                      '✓ Ventilation system activated\n' +
+                      '✓ Public address announcements active\n' +
+                      '✓ Emergency exits illuminated\n' +
+                      '✓ Fire suppression ready\n' +
+                      '✓ CCTV monitoring enhanced\n' +
+                      '✓ Emergency telephones prioritized\n\n' +
+                      'All safety systems operational.');
+            }, 500);
+        }
+
+        function testResetSystem() {
+            state.emergencyMode = false;
+            
+            // Reset traffic lights
+            document.getElementById('entryRed').classList.remove('active');
+            document.getElementById('entryGreen').classList.add('active');
+            document.getElementById('exitRed').classList.remove('active');
+            document.getElementById('exitGreen').classList.add('active');
+            
+            // Open barriers
+            const entryBarrier = document.getElementById('entryBarrier');
+            const exitBarrier = document.getElementById('exitBarrier');
+            entryBarrier.classList.remove('closed');
+            entryBarrier.classList.add('open');
+            exitBarrier.classList.remove('closed');
+            exitBarrier.classList.add('open');
+            state.barriersOpen = true;
+            
+            // Reset signs
+            document.getElementById('mainSign').textContent = 'TUNNEL OPEN - DRIVE SAFELY';
+            document.getElementById('mainSign').className = 'sign';
+            
+            // Reset status
+            document.getElementById('systemStatus').textContent = 'OPERATIONAL';
+            document.getElementById('trafficFlow').textContent = 'NORMAL';
+            state.alerts = 0;
+            document.getElementById('alertCount').textContent = '0';
+            
+            // Reset ventilation
+            const fans = document.querySelectorAll('.fan');
+            fans.forEach(fan => fan.classList.add('active'));
+            state.ventilationActive = true;
+            
+            logTransaction('✓ System reset initiated');
+            logTransaction('✓ Traffic lights restored to normal');
+            logTransaction('✓ Barriers opened');
+            logTransaction('✓ Ventilation system normal operation');
+            logTransaction('✓ All alerts cleared');
+            logTransaction('✅ SYSTEM RESET COMPLETE - Normal operations resumed');
+        }
+
+        // Knowledge Base
+        function showKB(topic) {
+            const kb = knowledgeBase[topic];
+            if (kb) {
+                document.getElementById('modalTitle').textContent = kb.title;
+                document.getElementById('modalContent').textContent = kb.content;
+                document.getElementById('kbModal').classList.add('active');
+                logTransaction(`📚 Knowledge base accessed: ${kb.title}`);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('kbModal').classList.remove('active');
+        }
+
+        // System Monitoring
+        function updateUptime() {
+            const elapsed = Date.now() - state.startTime;
+            const hours = Math.floor(elapsed / 3600000);
+            const minutes = Math.floor((elapsed % 3600000) / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+            
+            document.getElementById('uptime').textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function updateAvgSpeed() {
+            if (state.vehicles.length > 0) {
+                const totalSpeed = state.vehicles.reduce((sum, v) => sum + v.speed * 30, 0);
+                const avgSpeed = Math.round(totalSpeed / state.vehicles.length);
+                document.getElementById('avgSpeed').textContent = avgSpeed;
+            } else {
+                document.getElementById('avgSpeed').textContent = state.currentSpeedLimit;
+            }
+        }
+
+        // Animation Loop
+        setInterval(moveVehicles, 50);
+        setInterval(updateUptime, 1000);
+        setInterval(updateAvgSpeed, 2000);
+
+        // Auto-generate traffic (when not in emergency)
+        setInterval(() => {
+            if (!state.emergencyMode && state.barriersOpen && Math.random() > 0.6) {
+                const types = ['normal', 'normal', 'normal', 'normal', 'normal', 'hot', 'dangerous', 'overheight'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                testAddVehicle(type);
+            }
+        }, 4000);
+
+        // Modal close on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('kbModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Initialize
+        logTransaction('🟢 System initialized successfully');
+        logTransaction('✓ All subsystems operational');
+        logTransaction('✓ Detection systems active');
+        logTransaction('✓ Toll collection system ready');
+        logTransaction('✓ Camera monitoring online');
+        logTransaction('✓ Emergency systems on standby');
+        logTransaction('📊 Ready for traffic management operations');
+        
+        // Welcome message
+        setTimeout(() => {
+            alert('🚇 WELCOME TO THE TUNNEL CONTROL SYSTEM\n\n' +
+                  '✓ All systems operational\n' +
+                  '✓ Interactive testing enabled\n\n' +
+                  'FEATURES TO TEST:\n' +
+                  '• Click any button to test functions\n' +
+                  '• Add vehicles to simulate traffic\n' +
+                  '• Click vehicles for details\n' +
+                  '• Test emergency protocols\n' +
+                  '• Access knowledge base for info\n' +
+                  '• Click sensors to test detection\n\n' +
+                  'System ready for full demonstration!');
+        }, 1000);
+    </script>
+</body>
+</html>
